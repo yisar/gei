@@ -4,7 +4,8 @@
   "description": "3d engine",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "repository": {
     "type": "git",
@@ -16,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/yisar/gei/issues"
   },
-  "homepage": "https://github.com/yisar/gei#readme"
+  "homepage": "https://github.com/yisar/gei#readme",
+  "dependencies": {
+    "typescript": "^3.9.5"
+  }
 }
