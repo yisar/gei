@@ -1,0 +1,20 @@
+{
+  "name": "gei",
+  "version": "1.0.0",
+  "description": "3d engine",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yisar/gei.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yisar/gei/issues"
+  },
+  "homepage": "https://github.com/yisar/gei#readme"
+}
