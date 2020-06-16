@@ -10,14 +10,14 @@
 ### Use
 
 ```js
-import Gei, { Point, Sprite } from 'gei'
+import { Stage, Sprite } from 'gei'
 // create a stage
-const stage = new Gei(400, 500, document.getElementById('canvas'))
+const stage = new Stage(400, 500, document.getElementById('canvas'))
 // get a frame
-const frame = stage.texture(img).frame(Point(), Point(32))
+const frame = stage.texture(img).frame(40, 50)
 // create a sprite
-const sprite = Sprite(frame)
-// add too state
+const sprite = new Sprite(frame)
+// add to stage
 stage.add(sprite)
 
 const loop = () => {
