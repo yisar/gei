@@ -12,7 +12,7 @@
 ```js
 import { Stage, Sprite } from 'gei'
 // create a stage
-const stage = new Stage(400, 500, document.getElementById('canvas'))
+const stage = new Stage(400, 500, document.getElementById('gl'))
 // get a frame
 const frame = stage.texture(img).frame(40, 50)
 // create a sprite
@@ -21,7 +21,7 @@ const sprite = new Sprite(frame)
 stage.add(sprite)
 
 const loop = () => {
-	const { width, height } = stage.canvas
+	const { width, height } = stage.gl
 	sprite.position.set(Math.random() * width, Math.random() * height)
 	stage.render() // rerender the stage
 	requestAnimationFrame(loop)
