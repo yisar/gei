@@ -177,8 +177,10 @@ export const Stage = (canvas, options) => {
 			const w = source.width
 			const h = source.height
 			const t = gl.createTexture()
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
+			gl.activeTexture(gl.TEXTURE0)
 			gl.bindTexture(gl.TEXTURE_2D, t)
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 			gl.texImage2D(
 				gl.TEXTURE_2D,
 				0,
@@ -228,7 +230,7 @@ export const Stage = (canvas, options) => {
 			gl.useProgram(program)
 			gl.uniformMatrix4fv(matrixLocation, false, projection)
 			gl.viewport(0, 0, width, height)
-			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+			gl.clear(gl.COLOR_BUFFER_BIT)
 
 			currentFrame = nullFrame
 			layers.forEach(layer => layer.loop(draw))
