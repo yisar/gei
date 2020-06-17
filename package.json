@@ -4,8 +4,7 @@
   "description": "3d engine",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "start": "serve"
   },
   "repository": {
     "type": "git",
@@ -20,5 +19,8 @@
   "homepage": "https://github.com/yisar/gei#readme",
   "dependencies": {
     "typescript": "^3.9.5"
+  },
+  "devDependencies": {
+    "serve": "^11.3.2"
   }
 }
