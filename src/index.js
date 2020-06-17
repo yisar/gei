@@ -39,7 +39,7 @@ const maxBatch = 65535
 const depth = 1e5
 const nullFrame = { p: { t: 0 } }
 
-const Stage = (canvas, options) => {
+export const Stage = (canvas, options) => {
 	const zeroLayer = new Layer()
 	const layers = [zeroLayer]
 
@@ -48,8 +48,6 @@ const Stage = (canvas, options) => {
 	const arrayBuffer = new ArrayBuffer(maxBatch * byteSize)
 	const floatView = new Float32Array(arrayBuffer)
 	const uintView = new Uint32Array(arrayBuffer)
-	const { Point } = Stage
-
 	const opts = Object.assign({ antialias: false, alpha: false }, options)
 	const gl = canvas.getContext('webgl', opts)
 
@@ -169,15 +167,12 @@ const Stage = (canvas, options) => {
 			to: new Point(),
 			angle: 0,
 		},
-
 		background(r, g, b, a) {
 			gl.clearColor(r, g, b, a === 0 ? 0 : a || 1)
 		},
-
 		add(sprite) {
-			sprite.n = zeroLayer.add(sprite)
+			sprite.node = zeroLayer.add(sprite)
 		},
-
 		texture(source) {
 			const w = source.width
 			const h = source.height
@@ -197,23 +192,17 @@ const Stage = (canvas, options) => {
 				size: new Point(w, h),
 				anchor: new Point(),
 				uvs: [0, 0, 1, 1],
-				t
+				t,
 			}
 		},
-
 		resize,
-
 		render() {
 			resize()
-
 			const { at, to, angle } = renderer.camera
-
 			const x = at.x - width * to.x
 			const y = at.y - height * to.y
-
 			const c = Math.cos(angle)
 			const s = Math.sin(angle)
-
 			const w = 2 / width
 			const h = -2 / height
 
@@ -252,7 +241,7 @@ const Stage = (canvas, options) => {
 	return renderer
 }
 
-Stage.Point = class Point {
+export class Point {
 	constructor(x, y) {
 		this.set(x, y)
 	}
@@ -263,14 +252,14 @@ Stage.Point = class Point {
 	}
 }
 
-Stage.Sprite = class Sprite {
+export class Sprite {
 	constructor(frame, props) {
 		Object.assign(
 			this,
 			{
 				frame,
 				visible: true,
-				position: new Stage.Point(),
+				position: new Point(),
 				rotation: 0,
 				tint: 0xffffff,
 				alpha: 1,
@@ -308,4 +297,8 @@ class Layer {
 	}
 }
 
-export default Stage
+export default {
+	Stage,
+	Sprite,
+	Point,
+}

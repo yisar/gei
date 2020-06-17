@@ -12,9 +12,9 @@
 ```js
 import { Stage, Sprite } from 'gei'
 // create a stage
-const stage = new Stage(400, 500, document.getElementById('gl'))
+const stage = new Stage(document.getElementById('gl'))
 // get a frame
-const frame = stage.texture(img).frame(40, 50)
+const frame = stage.texture(img)
 // create a sprite
 const sprite = new Sprite(frame)
 // add to stage

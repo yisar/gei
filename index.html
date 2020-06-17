@@ -8,7 +8,7 @@
 	<body>
 		<canvas id="gl"></canvas>
 		<script type="module">
-			import Stage from './src/index.js'
+			import { Stage, Sprite } from './src/index.js'
 
 			const atlasImg = () => {
 				const canvas = document.createElement('canvas')
@@ -26,8 +26,6 @@
 				ctx.fill()
 				return canvas
 			}
-
-			const { Point, Sprite } = Stage
 
 			const gl = document.getElementById('gl')
 
