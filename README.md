@@ -12,7 +12,7 @@
 ```js
 import { create } from './src/index.js'
 const stage = create('#canvas')
-let sprite = stage.add('hj.png')
+const sprite = stage.add('hj.png')
 function loop() {
   sprite.x = Math.random() * stage.gl.canvas.width
   sprite.y = Math.random() * stage.gl.canvas.height
