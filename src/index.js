@@ -113,7 +113,7 @@ export function create(selector) {
     })
   }
 
-  function drawImage(tex, texWidth, texHeight, mX, mY) {
+  function drawImage(tex, h, w, x, y) {
     gl.bindTexture(gl.TEXTURE_2D, tex)
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.enableVertexAttribArray(positionLocation)
@@ -121,7 +121,7 @@ export function create(selector) {
     gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer)
     gl.enableVertexAttribArray(texcoordLocation)
     gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
-    gl.uniformMatrix4fv(matrixLocation, false, matrix(gl.canvas.width, gl.canvas.height, mX, mY, texWidth, texHeight))
+    gl.uniformMatrix4fv(matrixLocation, false, matrix(gl.canvas.width, gl.canvas.height, h, w, x, y))
     gl.uniform1i(textureLocation, 0)
     gl.drawArrays(gl.TRIANGLES, 0, 6)
   }
@@ -131,7 +131,7 @@ export function create(selector) {
     gl,
   }
 }
-function matrix(r, b, x, y, w, h) {
+function matrix(r, b, h, w, x, y) {
   let m = new Float32Array(16)
   m[0] = 2 / r
   m[1] = 0
