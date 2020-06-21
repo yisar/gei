@@ -7,21 +7,35 @@
   </head>
   <body>
     <style>
-      html{
-        background: #000;
-      }
     </style>
     <canvas id="canvas"></canvas>
     <script type="module">
       import { create } from './src/index.js'
+      const atlasImg = () => {
+				const canvas = document.createElement('canvas')
+				const ctx = canvas.getContext('2d')
+				canvas.width = 128
+				canvas.height = 32
+				ctx.fillStyle = '#946ce6'
+				ctx.strokeStyle = '#5400ff'
+				ctx.beginPath()
+				ctx.moveTo(16, 16)
+				for (let i = 0; i < Math.PI * 2; i += (Math.PI * 2) / 5) {
+					ctx.lineTo(16 - Math.sin(i) * 16, 16 - Math.cos(i) * 16)
+				}
+				ctx.closePath()
+				ctx.fill()
+				return canvas
+			}
       const stage = create('#canvas')
-      let sprite = stage.add('hj.png')
-      let sprite2 = stage.add('hj2.png')
+      const sprite = stage.add(atlasImg())
+      const sprite2 = stage.add('hj2.png')
       function loop() {
         sprite.x = Math.random() * stage.gl.canvas.width
         sprite.y = Math.random() * stage.gl.canvas.height
         sprite2.x = Math.random() * stage.gl.canvas.width
         sprite2.y = Math.random() * stage.gl.canvas.height
+        stage.clear(0.9, 0.9, 1, 1)
         stage.draw()
         requestAnimationFrame(loop)
       }

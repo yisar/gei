@@ -1,4 +1,4 @@
-let vs = `
+const vs = `
       attribute vec4 a_position;
       attribute vec2 a_texcoord;
       uniform mat4 u_matrix;
@@ -7,7 +7,7 @@ let vs = `
          gl_Position = u_matrix * a_position;
          v_texcoord = a_texcoord;
       }`
-let fs = `
+const fs = `
       precision mediump float;
       varying vec2 v_texcoord;
       uniform sampler2D u_texture;
@@ -15,11 +15,10 @@ let fs = `
          gl_FragColor = texture2D(u_texture, v_texcoord);
       }
       `
-export function create(selector) {
+export function create(selector, options) {
   const canvas = document.querySelector(selector)
-  const gl = canvas.getContext('webgl', {
-    alpha: true,
-  })
+  const gl = canvas.getContext('webgl', Object.assign({ alpha: true }, options))
+  const sprites = []
 
   const compileShader = (source, type) => {
     const shader = gl.createShader(type)
@@ -64,7 +63,7 @@ export function create(selector) {
   const texcoords = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STATIC_DRAW)
 
-  function loadImage(url) {
+  const loadImage = (url) => {
     const texture = gl.createTexture()
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]))
@@ -73,23 +72,29 @@ export function create(selector) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 
     const info = {
-      width: 1,
-      height: 1,
+      width: 0,
+      height: 0,
       texture,
     }
-    const img = new Image()
-    img.addEventListener('load', () => {
-      info.width = img.width
-      info.height = img.height
+    if (url.getContext) {
+      info.width = url.width
+      info.height = url.height
       gl.bindTexture(gl.TEXTURE_2D, info.texture)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
-    })
-    img.src = url
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, url)
+    } else {
+      const img = new Image()
+      img.addEventListener('load', () => {
+        info.width = img.width
+        info.height = img.height
+        gl.bindTexture(gl.TEXTURE_2D, info.texture)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
+      })
+      img.src = url
+    }
 
     return info
   }
 
-  const sprites = []
   const add = (sprite) => {
     sprites.push({
       x: sprite.x || Math.random() * gl.canvas.width,
@@ -101,19 +106,20 @@ export function create(selector) {
     return sprites[sprites.length - 1]
   }
 
-  function draw() {
+  const draw = () => {
     resize()
-
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-
-    gl.clear(gl.COLOR_BUFFER_BIT)
-
-    sprites.forEach((sprite) => {
-      drawImage(sprite.info.texture, sprite.info.width, sprite.info.height, sprite.x, sprite.y)
-    })
+    sprites.forEach((s) => drawImage(s.info.texture, s.info.width, s.info.height, s.x, s.y))
+    return this
   }
 
-  function drawImage(tex, h, w, x, y) {
+  const clear = (r, g, b, a) => {
+    gl.clearColor(r, g, b, a === 0 ? 0 : a || 1)
+    gl.clear(gl.COLOR_BUFFER_BIT)
+    return this
+  }
+
+  const drawImage = (tex, h, w, x, y) => {
     gl.bindTexture(gl.TEXTURE_2D, tex)
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
     gl.enableVertexAttribArray(positionLocation)
@@ -125,13 +131,15 @@ export function create(selector) {
     gl.uniform1i(textureLocation, 0)
     gl.drawArrays(gl.TRIANGLES, 0, 6)
   }
+
   return {
+    clear,
     add,
     draw,
     gl,
   }
 }
-function matrix(r, b, h, w, x, y) {
+function matrix(r, b, w, h, x, y) {
   let m = new Float32Array(16)
   m[0] = 2 / r
   m[1] = 0
