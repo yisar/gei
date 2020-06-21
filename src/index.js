@@ -43,6 +43,9 @@ export function create(selector) {
   gl.linkProgram(program)
   gl.useProgram(program)
 
+  gl.enable(gl.BLEND)
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
   const positionLocation = gl.getAttribLocation(program, 'a_position')
   const texcoordLocation = gl.getAttribLocation(program, 'a_texcoord')
 
@@ -93,7 +96,7 @@ export function create(selector) {
       y: sprite.y || Math.random() * gl.canvas.height,
       dx: Math.random() > 0.5 ? -1 : 1,
       dy: Math.random() > 0.5 ? -1 : 1,
-      info: loadImage(sprite.src),
+      info: loadImage(sprite.src || sprite),
     })
     return sprites[sprites.length - 1]
   }

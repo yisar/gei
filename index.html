@@ -6,14 +6,22 @@
     <title>Gei demo</title>
   </head>
   <body>
+    <style>
+      html{
+        background: #000;
+      }
+    </style>
     <canvas id="canvas"></canvas>
     <script type="module">
       import { create } from './src/index.js'
       const stage = create('#canvas')
       let sprite = stage.add('hj.png')
+      let sprite2 = stage.add('hj2.png')
       function loop() {
         sprite.x = Math.random() * stage.gl.canvas.width
         sprite.y = Math.random() * stage.gl.canvas.height
+        sprite2.x = Math.random() * stage.gl.canvas.width
+        sprite2.y = Math.random() * stage.gl.canvas.height
         stage.draw()
         requestAnimationFrame(loop)
       }
