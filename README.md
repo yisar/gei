@@ -17,7 +17,7 @@ function loop() {
   sprite.x = Math.random() * stage.gl.canvas.width
   sprite.y = Math.random() * stage.gl.canvas.height
   stage.draw()
-  // requestAnimationFrame(loop)
+  requestAnimationFrame(loop)
 }
 loop()
 ```
