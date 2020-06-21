@@ -1,306 +1,241 @@
-const vertexShader = `
-attribute vec2 g;
-attribute vec2 a;
-attribute vec2 t;
-attribute float r;
-attribute vec2 s;
-attribute vec4 u;
-attribute vec4 c;
-attribute float z;
-uniform mat4 m;
-varying vec2 v;
-varying vec4 i;
-void main(){
-v=u.xy+g*u.zw;
-i=c.abgr;
-vec2 p=(g-a)*s;
-float q=cos(r);
-float w=sin(r);
-p=vec2(p.x*q-p.y*w,p.x*w+p.y*q);
-p+=a+t;
-gl_Position=m*vec4(p,z,1);
-}`
+let vs = `
+      attribute vec4 a_position;
+      attribute vec2 a_texcoord;
+      uniform mat4 u_matrix;
+      varying vec2 v_texcoord;
+      void main() {
+         gl_Position = u_matrix * a_position;
+         v_texcoord = a_texcoord;
+      }`
+let fs = `
+      precision mediump float;
+      varying vec2 v_texcoord;
+      uniform sampler2D u_texture;
+      void main() {
+         gl_FragColor = texture2D(u_texture, v_texcoord);
+      }
+      `
+export function gl(selector) {
+  const canvas = document.querySelector(selector)
+  const gl = canvas.getContext('webgl', {
+    alpha: true,
+  })
 
-const fragmentShader = `
-precision mediump float;
-uniform sampler2D x;
-uniform float j;
-varying vec2 v;
-varying vec4 i;
-void main(){
-vec4 c=texture2D(x,v);
-gl_FragColor=c*i;
-if(j>0.0){
-if(c.a<j)discard;
-gl_FragColor.a=1.0;};
-}`
+  const compileShader = (source, type) => {
+    const shader = gl.createShader(type)
+    gl.shaderSource(shader, source)
+    gl.compileShader(shader)
+    return shader
+  }
 
-const maxBatch = 65535
-const depth = 1e5
-const nullFrame = { p: { t: 0 } }
+  const resize = () => {
+    let width = canvas.clientWidth | 0
+    let height = canvas.clientHeight | 0
+    const change = canvas.width !== width || canvas.height !== height
+    canvas.width = width
+    canvas.height = height
+    return change
+  }
 
-export const Stage = (canvas, options) => {
-	const zeroLayer = new Layer()
-	const layers = [zeroLayer]
+  const program = gl.createProgram()
+  gl.attachShader(program, compileShader(vs, gl.VERTEX_SHADER))
+  gl.attachShader(program, compileShader(fs, gl.FRAGMENT_SHADER))
+  gl.linkProgram(program)
+  gl.useProgram(program)
 
-	const floatSize = 2 + 2 + 1 + 2 + 4 + 1 + 1
-	const byteSize = floatSize * 4
-	const arrayBuffer = new ArrayBuffer(maxBatch * byteSize)
-	const floatView = new Float32Array(arrayBuffer)
-	const uintView = new Uint32Array(arrayBuffer)
-	const opts = Object.assign({ antialias: false, alpha: false }, options)
-	const gl = canvas.getContext('webgl', opts)
+  const positionLocation = gl.getAttribLocation(program, 'a_position')
+  const texcoordLocation = gl.getAttribLocation(program, 'a_texcoord')
 
-	const ext = gl.getExtension('ANGLE_instanced_arrays')
+  const matrixLocation = gl.getUniformLocation(program, 'u_matrix')
+  const textureLocation = gl.getUniformLocation(program, 'u_texture')
 
-	const compileShader = (source, type) => {
-		const shader = gl.createShader(type)
-		gl.shaderSource(shader, source)
-		gl.compileShader(shader)
-		return shader
-	}
+  const positionBuffer = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
 
-	const program = gl.createProgram()
-	gl.attachShader(program, compileShader(vertexShader, gl.VERTEX_SHADER))
-	gl.attachShader(program, compileShader(fragmentShader, gl.FRAGMENT_SHADER))
-	gl.linkProgram(program)
+  const positions = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
 
-	const createBuffer = (type, src, usage) => {
-		gl.bindBuffer(type, gl.createBuffer())
-		gl.bufferData(type, src, usage || gl.STATIC_DRAW)
-	}
+  const texcoordBuffer = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer)
 
-	const bindAttrib = (name, size, stride, divisor, offset, type, norm) => {
-		const location = gl.getAttribLocation(program, name)
-		gl.enableVertexAttribArray(location)
-		gl.vertexAttribPointer(
-			location,
-			size,
-			type || gl.FLOAT,
-			!!norm,
-			stride || 0,
-			offset || 0
-		)
-		divisor && ext.vertexAttribDivisorANGLE(location, divisor)
-	}
+  const texcoords = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STATIC_DRAW)
 
-	createBuffer(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array([0, 1, 2, 2, 1, 3]))
-	createBuffer(gl.ARRAY_BUFFER, new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]))
-	bindAttrib('g', 2)
-	createBuffer(gl.ARRAY_BUFFER, arrayBuffer, gl.DYNAMI_CDRAW)
-	bindAttrib('a', 2, byteSize, 1)
-	bindAttrib('s', 2, byteSize, 1, 8)
-	bindAttrib('r', 1, byteSize, 1, 16)
-	bindAttrib('t', 2, byteSize, 1, 20)
-	bindAttrib('u', 4, byteSize, 1, 28)
-	bindAttrib('c', 4, byteSize, 1, 44, gl.UNSIGNED_BYTE, true)
-	bindAttrib('z', 1, byteSize, 1, 48)
+  function loadImage(url) {
+    const texture = gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]))
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 
-	const getUniformLocation = name => gl.getUniformLocation(program, name)
-	const matrixLocation = getUniformLocation('m')
-	const alphaTestLocation = getUniformLocation('j')
+    const info = {
+      width: 1,
+      height: 1,
+      texture,
+    }
+    const img = new Image()
+    img.addEventListener('load', () => {
+      info.width = img.width
+      info.height = img.height
+      gl.bindTexture(gl.TEXTURE_2D, info.texture)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
+    })
+    img.src = url
 
-	let width
-	let height
+    return info
+  }
 
-	let count = 0
-	let currentFrame
+  const drawInfos = []
+  const speed = 60
+  for (let i = 0; i < 9; i++) {
+    const drawInfo = {
+      x: Math.random() * gl.canvas.width,
+      y: Math.random() * gl.canvas.height,
+      dx: Math.random() > 0.5 ? -1 : 1,
+      dy: Math.random() > 0.5 ? -1 : 1,
+      info: loadImage('hj.png'),
+    }
+    drawInfos.push(drawInfo)
+    console.log(drawInfos)
+  }
 
-	const resize = () => {
-		width = canvas.clientWidth | 0
-		height = canvas.clientHeight | 0
-		const change = canvas.width !== width || canvas.height !== height
-		canvas.width = width
-		canvas.height = height
-		return change
-	}
+  function update(deltaTime) {
+    drawInfos.forEach(function (drawInfo) {
+      drawInfo.x += drawInfo.dx * speed * deltaTime
+      drawInfo.y += drawInfo.dy * speed * deltaTime
+      if (drawInfo.x < 0) drawInfo.dx = 1
+      if (drawInfo.x >= gl.canvas.width) drawInfo.dx = -1
+      if (drawInfo.y < 0) drawInfo.dy = 1
+      if (drawInfo.y >= gl.canvas.height) drawInfo.dy = -1
+    })
+  }
 
-	const flush = () => {
-		if (!count) return
-		gl.uniform1f(alphaTestLocation, 1)
-		gl.bufferSubData(
-			gl.ARRAY_BUFFER,
-			0,
-			floatView.subarray(0, count * floatSize)
-		)
-		ext.drawElementsInstancedANGLE(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, 0, count)
-		count = 0
-	}
+  function draw() {
+    resize()
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+    gl.clear(gl.COLOR_BUFFER_BIT)
+    drawInfos.forEach((d) => drawImage(d.info.texture, d.info.width, d.info.height, d.x, d.y))
+  }
 
-	const draw = sprite => {
-		if (!sprite.visible) return
-		if (count === maxBatch) flush()
+  var then = 0
 
-		const { frame } = sprite
-		const { uvs } = frame
+  function render(time) {
+    var now = time * 0.001
+    var deltaTime = Math.min(0.1, now - then)
+    then = now
 
-		if (currentFrame.t !== frame.t) {
-			currentFrame.t && flush()
-			currentFrame = frame
-		}
+    update(deltaTime)
+    draw()
 
-		let i = count * floatSize
+    requestAnimationFrame(render)
+  }
+  requestAnimationFrame(render)
 
-		floatView[i++] = frame.anchor.x
-		floatView[i++] = frame.anchor.y
-		floatView[i++] = frame.size.x
-		floatView[i++] = frame.size.y
+  function drawImage(tex, texWidth, texHeight, dstX, dstY) {
+    gl.bindTexture(gl.TEXTURE_2D, tex)
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
+    gl.enableVertexAttribArray(positionLocation)
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+    gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer)
+    gl.enableVertexAttribArray(texcoordLocation)
+    gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
 
-		floatView[i++] = sprite.rotation
-		floatView[i++] = sprite.position.x
-		floatView[i++] = sprite.position.y
+    let matrix = orthographic(0, gl.canvas.width, gl.canvas.height, 0, -1, 1)
+    matrix = translate(matrix, dstX, dstY, 0)
+    matrix = scale(matrix, texWidth, texHeight, 1)
 
-		floatView[i++] = uvs[0]
-		floatView[i++] = uvs[1]
-		floatView[i++] = uvs[2]
-		floatView[i++] = uvs[3]
-
-		uintView[i++] = ((sprite.tint & 0xffffff) << 8) >>> 0
-		floatView[i] = 0
-		count++
-	}
-
-	const renderer = {
-		gl,
-		camera: {
-			at: new Point(),
-			to: new Point(),
-			angle: 0,
-		},
-		background(r, g, b, a) {
-			gl.clearColor(r, g, b, a === 0 ? 0 : a || 1)
-		},
-		add(sprite) {
-			sprite.node = zeroLayer.add(sprite)
-		},
-		texture(source) {
-			const w = source.width
-			const h = source.height
-			const t = gl.createTexture()
-			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
-			gl.activeTexture(gl.TEXTURE0)
-			gl.bindTexture(gl.TEXTURE_2D, t)
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-			gl.texImage2D(
-				gl.TEXTURE_2D,
-				0,
-				gl.RGBA,
-				gl.RGBA,
-				gl.UNSIGNED_BYTE,
-				source
-			)
-
-			return {
-				size: new Point(w, h),
-				anchor: new Point(),
-				uvs: [0, 0, 1, 1],
-				t,
-			}
-		},
-		resize,
-		render() {
-			resize()
-			const { at, to, angle } = renderer.camera
-			const x = at.x - width * to.x
-			const y = at.y - height * to.y
-			const c = Math.cos(angle)
-			const s = Math.sin(angle)
-			const w = 2 / width
-			const h = -2 / height
-
-			const projection = [
-				c * w,
-				s * h,
-				0,
-				0,
-				-s * w,
-				c * h,
-				0,
-				0,
-				0,
-				0,
-				-1 / depth,
-				0,
-				(at.x * (1 - c) + at.y * s) * w - (2 * x) / width - 1,
-				(at.y * (1 - c) - at.x * s) * h + (2 * y) / height + 1,
-				0,
-				1,
-			]
-
-			gl.useProgram(program)
-			gl.uniformMatrix4fv(matrixLocation, false, projection)
-			gl.viewport(0, 0, width, height)
-			gl.clear(gl.COLOR_BUFFER_BIT)
-
-			currentFrame = nullFrame
-			layers.forEach(layer => layer.loop(draw))
-			flush()
-		},
-	}
-
-	resize()
-
-	return renderer
+    gl.uniformMatrix4fv(matrixLocation, false, matrix)
+    gl.uniform1i(textureLocation, 0)
+    gl.drawArrays(gl.TRIANGLES, 0, 6)
+  }
 }
+function orthographic(left, right, bottom, top, near, far, dst) {
+  dst = dst || new Float32Array(16)
 
-export class Point {
-	constructor(x, y) {
-		this.set(x, y)
-	}
+  dst[0] = 2 / (right - left)
+  dst[1] = 0
+  dst[2] = 0
+  dst[3] = 0
+  dst[4] = 0
+  dst[5] = 2 / (top - bottom)
+  dst[6] = 0
+  dst[7] = 0
+  dst[8] = 0
+  dst[9] = 0
+  dst[10] = 2 / (near - far)
+  dst[11] = 0
+  dst[12] = (left + right) / (left - right)
+  dst[13] = (bottom + top) / (bottom - top)
+  dst[14] = (near + far) / (near - far)
+  dst[15] = 1
 
-	set(x, y) {
-		this.x = x || 0
-		this.y = y || (y !== 0 ? this.x : 0)
-	}
+  return dst
 }
+function translate(m, tx, ty, tz, dst) {
+  dst = dst || new Float32Array(16)
 
-export class Sprite {
-	constructor(frame, props) {
-		Object.assign(
-			this,
-			{
-				frame,
-				visible: true,
-				position: new Point(),
-				rotation: 0,
-				tint: 0xffffff,
-				alpha: 1,
-			},
-			props
-		)
-	}
+  var m00 = m[0]
+  var m01 = m[1]
+  var m02 = m[2]
+  var m03 = m[3]
+  var m10 = m[1 * 4 + 0]
+  var m11 = m[1 * 4 + 1]
+  var m12 = m[1 * 4 + 2]
+  var m13 = m[1 * 4 + 3]
+  var m20 = m[2 * 4 + 0]
+  var m21 = m[2 * 4 + 1]
+  var m22 = m[2 * 4 + 2]
+  var m23 = m[2 * 4 + 3]
+  var m30 = m[3 * 4 + 0]
+  var m31 = m[3 * 4 + 1]
+  var m32 = m[3 * 4 + 2]
+  var m33 = m[3 * 4 + 3]
+
+  if (m !== dst) {
+    dst[0] = m00
+    dst[1] = m01
+    dst[2] = m02
+    dst[3] = m03
+    dst[4] = m10
+    dst[5] = m11
+    dst[6] = m12
+    dst[7] = m13
+    dst[8] = m20
+    dst[9] = m21
+    dst[10] = m22
+    dst[11] = m23
+  }
+
+  dst[12] = m00 * tx + m10 * ty + m20 * tz + m30
+  dst[13] = m01 * tx + m11 * ty + m21 * tz + m31
+  dst[14] = m02 * tx + m12 * ty + m22 * tz + m32
+  dst[15] = m03 * tx + m13 * ty + m23 * tz + m33
+
+  return dst
 }
+function scale(m, sx, sy, sz, dst) {
+  dst = dst || new Float32Array(16)
 
-class Node {
-	constructor(layer, current, next) {
-		this.layer = layer
-		this.current = current
-		this.next = next
-	}
-}
+  dst[0] = sx * m[0 * 4 + 0]
+  dst[1] = sx * m[0 * 4 + 1]
+  dst[2] = sx * m[0 * 4 + 2]
+  dst[3] = sx * m[0 * 4 + 3]
+  dst[4] = sy * m[1 * 4 + 0]
+  dst[5] = sy * m[1 * 4 + 1]
+  dst[6] = sy * m[1 * 4 + 2]
+  dst[7] = sy * m[1 * 4 + 3]
+  dst[8] = sz * m[2 * 4 + 0]
+  dst[9] = sz * m[2 * 4 + 1]
+  dst[10] = sz * m[2 * 4 + 2]
+  dst[11] = sz * m[2 * 4 + 3]
 
-class Layer {
-	constructor() {
-		this.node = null
-	}
+  if (m !== dst) {
+    dst[12] = m[12]
+    dst[13] = m[13]
+    dst[14] = m[14]
+    dst[15] = m[15]
+  }
 
-	add(sprite) {
-		const node = new Node(this, sprite, this.node)
-		this.node = node
-		return node
-	}
-
-	loop(draw) {
-		let node = this.node
-		while (node) {
-			draw(node.current)
-			node = node.next
-		}
-	}
-}
-
-export default {
-	Stage,
-	Sprite,
-	Point,
+  return dst
 }
