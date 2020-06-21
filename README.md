@@ -1,6 +1,6 @@
 <p align="center"><img src="http://wx1.sinaimg.cn/mw690/0060lm7Tly1ftpfy740m8j30jn0jnaat.jpg" alt="gay logo" width="150"></p>
 <h1 align="center">Gei</h1>
-<p align="center">Fast 1kb game engine.</p>
+<p align="center">Fast 1kb sprites system with webgl.</p>
 
 ### Feature
 
