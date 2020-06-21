@@ -10,21 +10,14 @@
 ### Use
 
 ```js
-import { Stage, Sprite } from 'gei'
-// create a stage
-const stage = new Stage(document.getElementById('gl'))
-// get a frame
-const frame = stage.texture(img)
-// create a sprite
-const sprite = new Sprite(frame)
-// add to stage
-stage.add(sprite)
-
-const loop = () => {
-	const { width, height } = stage.gl
-	sprite.position.set(Math.random() * width, Math.random() * height)
-	stage.render() // rerender the stage
-	requestAnimationFrame(loop)
+import { create } from './src/index.js'
+const stage = create('#canvas')
+let sprite = stage.add('hj.png')
+function loop() {
+  sprite.x = Math.random() * stage.gl.canvas.width
+  sprite.y = Math.random() * stage.gl.canvas.height
+  stage.draw()
+  requestAnimationFrame(loop)
 }
 loop()
 ```

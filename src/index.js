@@ -15,7 +15,7 @@ let fs = `
          gl_FragColor = texture2D(u_texture, v_texcoord);
       }
       `
-export function gl(selector) {
+export function create(selector) {
   const canvas = document.querySelector(selector)
   const gl = canvas.getContext('webgl', {
     alpha: true,
@@ -86,51 +86,29 @@ export function gl(selector) {
     return info
   }
 
-  const drawInfos = []
-  const speed = 60
-  for (let i = 0; i < 9; i++) {
-    const drawInfo = {
-      x: Math.random() * gl.canvas.width,
-      y: Math.random() * gl.canvas.height,
+  const sprites = []
+  const add = (sprite) => {
+    sprites.push({
+      x: sprite.x || Math.random() * gl.canvas.width,
+      y: sprite.y || Math.random() * gl.canvas.height,
       dx: Math.random() > 0.5 ? -1 : 1,
       dy: Math.random() > 0.5 ? -1 : 1,
-      info: loadImage('hj.png'),
-    }
-    drawInfos.push(drawInfo)
-    console.log(drawInfos)
-  }
-
-  function update(deltaTime) {
-    drawInfos.forEach(function (drawInfo) {
-      drawInfo.x += drawInfo.dx * speed * deltaTime
-      drawInfo.y += drawInfo.dy * speed * deltaTime
-      if (drawInfo.x < 0) drawInfo.dx = 1
-      if (drawInfo.x >= gl.canvas.width) drawInfo.dx = -1
-      if (drawInfo.y < 0) drawInfo.dy = 1
-      if (drawInfo.y >= gl.canvas.height) drawInfo.dy = -1
+      info: loadImage(sprite.src),
     })
+    return sprites[sprites.length - 1]
   }
 
   function draw() {
     resize()
+
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+
     gl.clear(gl.COLOR_BUFFER_BIT)
-    drawInfos.forEach((d) => drawImage(d.info.texture, d.info.width, d.info.height, d.x, d.y))
+
+    sprites.forEach((sprite) => {
+      drawImage(sprite.info.texture, sprite.info.width, sprite.info.height, sprite.x, sprite.y)
+    })
   }
-
-  var then = 0
-
-  function render(time) {
-    var now = time * 0.001
-    var deltaTime = Math.min(0.1, now - then)
-    then = now
-
-    update(deltaTime)
-    draw()
-
-    requestAnimationFrame(render)
-  }
-  requestAnimationFrame(render)
 
   function drawImage(tex, texWidth, texHeight, dstX, dstY) {
     gl.bindTexture(gl.TEXTURE_2D, tex)
@@ -141,13 +119,22 @@ export function gl(selector) {
     gl.enableVertexAttribArray(texcoordLocation)
     gl.vertexAttribPointer(texcoordLocation, 2, gl.FLOAT, false, 0, 0)
 
-    let matrix = orthographic(0, gl.canvas.width, gl.canvas.height, 0, -1, 1)
+    var matrix = orthographic(0, gl.canvas.width, gl.canvas.height, 0, -1, 1)
+
     matrix = translate(matrix, dstX, dstY, 0)
+
     matrix = scale(matrix, texWidth, texHeight, 1)
 
     gl.uniformMatrix4fv(matrixLocation, false, matrix)
+
     gl.uniform1i(textureLocation, 0)
+
     gl.drawArrays(gl.TRIANGLES, 0, 6)
+  }
+  return {
+    add,
+    draw,
+    gl
   }
 }
 function orthographic(left, right, bottom, top, near, far, dst) {

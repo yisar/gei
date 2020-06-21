@@ -1,15 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="glport" content="width=device-width, initial-scale=1.0" />
-		<title>Gei demo</title>
-	</head>
-	<body>
-		<canvas id="canvas"></canvas>
-		<script type="module">
-			import { gl } from './src/index.js'
-			gl('#canvas')
-		</script>
-	</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="glport" content="width=device-width, initial-scale=1.0" />
+    <title>Gei demo</title>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script type="module">
+      import { create } from './src/index.js'
+      const stage = create('#canvas')
+      let sprite = stage.add('hj.png')
+      function loop() {
+        sprite.x = Math.random() * stage.gl.canvas.width
+        sprite.y = Math.random() * stage.gl.canvas.height
+        stage.draw()
+        requestAnimationFrame(loop)
+      }
+      loop()
+    </script>
+  </body>
 </html>
